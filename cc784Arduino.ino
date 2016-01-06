@@ -34,9 +34,9 @@
  * x add a form on root "/" to submit each bank, and handl form submissions
  * x change pstring to be a circular buffer? (that's hard...) -> made it reset at the end
  * - modify Esp8266WebServer to allow streaming of response
- * - add feature to store results of program into eprom and api to retrieve them
+ * 0 add feature to store results of program into eprom and api to retrieve them
  * - add feature to upload a file of 1-liners to the sign (and api)
- * - add set time feature
+ * x add set time feature
  *
  * Special thanks to: http://www.textfixer.com/html/compress-html-compression.php for compressing my awful html
  * Special thanks to: http://www.html.am/ for providing great templates that I destroyed with my awful html
@@ -51,13 +51,14 @@
 
 #define SESSION_BUFFER_SIZE    512
 #define HTML_BUFFER_SIZE       8192
+#define SIGN_RESTART_LIMIT_MILLIS 2000
 
 const char* ssid = "**********";
 const char* password = "****************";
 
 char sessionbuffer[SESSION_BUFFER_SIZE];
 char htmlbuffer[HTML_BUFFER_SIZE];
-unsigned long lastreboot = 0;
+unsigned long signStartMillis = 0;
 
 ESP8266WebServer server(80);
 SoftwareSerial ss(RXPIN, TXPIN);
@@ -201,6 +202,7 @@ void handleRoot() {
 
   printProgStr(root_footer, &p);
   server.send(200, "text/html", htmlbuffer);
+  digitalWrite(LEDPIN, 0); // Turns LED back on
 }
 
 void handleNotFound() {
@@ -279,10 +281,10 @@ void handleSequence() {
     ++pch;
   }
 
-  if(cc.sendCommand(CCMSG_STOP) &&
-    cc.sendCommand(CCMSG_SEQ) &&
-    cc.sendString(paramValue) &&
-    cc.sendCommand(CCMSG_RUN))
+  if (cc.sendCommand(CCMSG_STOP) &&
+      cc.sendCommand(CCMSG_SEQ) &&
+      cc.sendString(paramValue) &&
+      cc.sendCommand(CCMSG_RUN))
   {
     endHandler(200);
     return;
@@ -292,31 +294,22 @@ void handleSequence() {
 
 void handleRebootDisplay() {
   beginHandler();
-  if ((0 == lastreboot) || ((millis() - lastreboot) > 1000)) {
+  if ((millis() - signStartMillis) > SIGN_RESTART_LIMIT_MILLIS) {
     digitalWrite(RELAYPIN, 1);
     delay(5000);
     digitalWrite(RELAYPIN, 0);
-    lastreboot = millis();
+    signStartMillis = millis();
     endHandler(200, "Reboot Completed.");
   } else {
     endHandler(503, "Too soon.");
   }
 }
 
-void programBank(const char* bank) {
-  beginHandler();
-  if (!server.hasArg("msg")) {
-    endHandler(400, "Missing msg parameter.");
-    return;
-  }
-  programBank(bank, server.arg("msg").c_str());
-}
-
 void programBank(const char* bank, const char* msg) {
   char decodedParam[255];
   logger.resetBuffer();
 
-  if (strlen(bank)>1 || !isdigit(bank[0])) {
+  if (strlen(bank) > 1 || !isdigit(bank[0])) {
     endHandler(400, "The bank parameter must be a single digit (0-9).");
     return;
   }
@@ -332,8 +325,34 @@ void programBank(const char* bank, const char* msg) {
       cc.processColorCellsProtocol(decodedParam) &&
       cc.sendCommand(CCMSG_RUN))
   {
-        endHandler(200);
-        return;
+    endHandler(200);
+    return;
+  }
+  endHandler(400);
+}
+
+/*
+ * Setting the time takes special care because on the last digit sent
+ * there is a several second pause before the reply. Presumably that is
+ * when the onboard PIC is talking to the real time clock.
+ */
+void handleSetTime() {
+  beginHandler();
+  if (!server.hasArg("time")) {
+    endHandler(400, "Missing time parameter.");
+    return;
+  }
+  if (!server.hasArg("am")) {
+    endHandler(400, "Missing am parameter.");
+    return;
+  }
+  if (cc.sendCommand(CCMSG_STOP) &&
+      cc.sendCommand(CCMSG_SETTIME) &&
+      cc.sendString(server.arg("time").c_str(), 5000) &&
+      cc.sendString(server.arg("am").c_str()), 5000)
+  {
+    endHandler(200);
+    return;      
   }
   endHandler(400);
 }
@@ -364,6 +383,7 @@ void setup() {
   server.on("/run", handleRun);
   server.on("/sequence", handleSequence);
   server.on("/rebootdisplay", handleRebootDisplay);
+  server.on("/settime", handleSetTime);
 
   server.on("/cmd", []() {
     beginHandler();
@@ -383,36 +403,26 @@ void setup() {
     }
   });
 
-  // emulate rest server dispatching multiple URIs
-  server.on("/program/0", []() {
-    programBank("0");
+  server.on("/signoff", []() {
+    beginHandler();
+    if ((millis() - signStartMillis) > SIGN_RESTART_LIMIT_MILLIS) {
+      digitalWrite(RELAYPIN, 1);
+      signStartMillis = millis();
+      endHandler(200, "Sign is off.");
+    } else {
+      endHandler(400, "Too soon.");
+    }
   });
-  server.on("/program/1", []() {
-    programBank("1");
-  });
-  server.on("/program/2", []() {
-    programBank("2");
-  });
-  server.on("/program/3", []() {
-    programBank("3");
-  });
-  server.on("/program/4", []() {
-    programBank("4");
-  });
-  server.on("/program/5", []() {
-    programBank("5");
-  });
-  server.on("/program/6", []() {
-    programBank("6");
-  });
-  server.on("/program/7", []() {
-    programBank("7");
-  });
-  server.on("/program/8", []() {
-    programBank("8");
-  });
-  server.on("/program/9", []() {
-    programBank("9");
+
+  server.on("/signon", []() {
+    beginHandler();
+    if ((millis() - signStartMillis) > SIGN_RESTART_LIMIT_MILLIS) {
+      digitalWrite(RELAYPIN, 0);
+      signStartMillis = millis();
+      endHandler(200, "Sign is on.");
+    } else {
+      endHandler(400, "Too soon.");
+    }
   });
 
   // This is for the form submission: ?bank=1&msg=s:foo
@@ -434,6 +444,8 @@ void setup() {
   ss.println("HTTP server started");
   ss.println(" *  READY  *");
   ss.println(">");
+
+  signStartMillis = millis();
 }
 
 void loop() {

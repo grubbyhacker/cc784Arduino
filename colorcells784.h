@@ -82,15 +82,15 @@ int strncasecmp( _CONST char*, _CONST char*, size_t);
 
 class ColorCells784 {
   public:
-    ColorCells784(Print* p): _logger(p) {};
+    ColorCells784(Print* p): _logger(p), _rx_timeout_ms(WAIT_MS) {};
 
     void setup() {
       Serial.begin(300);
     }
 
-    // primitive apis
     int sendCommand(const char*);
     int sendString(const char*);
+    int sendString(const char*, unsigned long);
     int processColorCellsProtocol(char*);
 
     CCMetrics* getMetrics() { return &_metrics;}
@@ -100,5 +100,6 @@ class ColorCells784 {
 
     Print* _logger;
     CCMetrics _metrics;
+    unsigned long _rx_timeout_ms;
 };
 

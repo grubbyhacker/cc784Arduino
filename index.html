@@ -225,11 +225,21 @@ There are 10 banks of messages, numbered 0-9. You can schedule which banks of me
                     target="result">
 			Input your sequence: <input type="text" name="seq">
 
-			<input onclick="doloading();" type="submit" value=
-                        "Submit">
+			<input onclick="doloading();" type="submit" value= "Submit">
 
 		    </form>
 
+		    <h3 id="settime">Set the Time</h3>
+		    The CC784 has a realtime clock and can display the time in a message.<p></p>
+		    <form action="/settime" method="get" target="result">
+			    Four-digit 12-h time: [hhmm] <input type="text" name="time">
+			     <select name="am">  
+				    <option value="N">PM</option>
+				    <option value="Y">AM</option>
+			    </select>
+
+			    <input onclick="doloading();" type="submit" value="Submit">
+		    </form>
 
 
                     <h3 id="metrics">Serving Metrics</h3>
@@ -316,17 +326,20 @@ There are 10 banks of messages, numbered 0-9. You can schedule which banks of me
                     </li>
                     <li>
                         <a href="/signoff" onclick="doloading();" target=
-                        "result">Turn Sign Off (NYI)</a>
+                        "result">Turn Sign Off</a>
                     </li>
                     <li>
                         <a href="/signon" onclick="doloading();" target=
-                        "result">Turn Sign On (NYI)</a>
+                        "result">Turn Sign On</a>
                     </li>
                     <li>
                         <a href="#message">Change Message</a>
                     </li>
                     <li>
                         <a href="#sequence">Sequence</a>
+                    </li>
+                    <li>
+                        <a href="#settime">Set the time</a>
                     </li>
                 </ul>
                 <h3>Information</h3>
@@ -335,10 +348,7 @@ There are 10 banks of messages, numbered 0-9. You can schedule which banks of me
                         <a href="#metrics">Serving Metrics</a>
                     </li>
                     <li>
-                        <a href="" target="_blank">Protocol Definition</a>
-                    </li>
-                    <li>
-                        <a href="" target="_blank">CC784 Manual</a>
+                        <a href="https://github.com/grubbyhacker/cc784Arduino" target="_blank">Help</a>
                     </li>
                 </ul>
             </div>

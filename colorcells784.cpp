@@ -84,6 +84,17 @@ int ColorCells784::sendString(const char *msg) {
   return 1;
 }
 
+/*
+ * This version temporarily sets the timeout to a user defined value. This
+ * is needed only for the SETTIME command which can take 2-5 seconds before
+ * it responds to the last digit.
+ */
+int ColorCells784::sendString(const char *msg, unsigned long rx_timeout_ms) {
+  _rx_timeout_ms = rx_timeout_ms;
+  sendString(msg);
+  _rx_timeout_ms = WAIT_MS;
+}
+
 int ColorCells784::processColorCellsProtocol(char *input) {
   char* pch = strtok (input, CC_SEPARATOR);
   while (pch != NULL)
@@ -141,7 +152,7 @@ int ColorCells784::sendControlCode(unsigned int ch) {
   unsigned int retry = 1;
   unsigned long startmillis = millis();
   while (!Serial.available()) {
-    if ((millis() - startmillis) > WAIT_MS) {
+    if ((millis() - startmillis) > _rx_timeout_ms) {
       _logger->println("Timeout.");
       _metrics.countTimeouts++;
       return 0;
