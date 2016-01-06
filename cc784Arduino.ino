@@ -9,35 +9,6 @@
 #include "html.h"
 
 /*
- * TODOS: (x done, 0 dicarded, - undone)
- *
- * x add bail out logic that fails message if send rate is low (i.e. not in program mode.)
- * 0 2x crlf in all responses (to make it easier for curl users)
- * - pick a better delimiter so that comma can be used: try _, since its not allowed in sign anyway
- * x in cc7 guard against ascii values > 126 or 127 if i support delete
- * x think about just having two methods: command & string -> implemented in addition to the others
- * x collect statistics and serve them on root ("/")
- * 0 keep track of state and prevent any command from being processed if sign isn't stopped.
- * x handle sign communication errors, report back to caller
- * 0 consider a more robust protocol
- * - support graphics and colors natively
- * x fail call to sequence for >32
- * x test limit of sign and fail if attempt goes over limit
- * x make sequence always issue a stop, seq then run
- * x split colorcells logic and protocol stuff to its own class
- * x rename all usages of "control" with "logger"
- * x make /program issue "PROG" automaticaly (support "/program/3")
- * x case insensitive for C: and S:
- * x change led pin to use #define
- * x make all methods light LED during processing
- * x change all references to commands to use their #define names
- * x add a form on root "/" to submit each bank, and handl form submissions
- * x change pstring to be a circular buffer? (that's hard...) -> made it reset at the end
- * - modify Esp8266WebServer to allow streaming of response
- * 0 add feature to store results of program into eprom and api to retrieve them
- * - add feature to upload a file of 1-liners to the sign (and api)
- * x add set time feature
- *
  * Special thanks to: http://www.textfixer.com/html/compress-html-compression.php for compressing my awful html
  * Special thanks to: http://www.html.am/ for providing great templates that I destroyed with my awful html
  * Special thanks to: http://www.dirtymarkup.com/ for pretty printing my awful html
