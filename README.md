@@ -1,7 +1,7 @@
 # cc784Arduino
-A wifi-enabled ColorCells CC784 LED message board. Uses an ESP8266 and Arduino libraries to build a web front-end for this old device.
+This is the code behind my wifi-enabled ColorCells CC784 LED message board. It uses an ESP8266 and Arduino libraries to build a web front-end and REST-like API for this old device.
 
-![alt text](screenshots/esp8266_cc784.png "This is web page is completely served from the ESP8266 itself, except for the background image.")
+![Image of what the UI looks like](screenshots/esp8266_cc784.png "This is web page is completely served from the ESP8266 itself, except for the background image.")
 
 # Introduction
 Several years ago somebody gave me one of these LED message boards. They were going to throw it away because the programmer was broken. I figured I would do something with it some day. That day has come. In this project I mate an old ColorCells message board with an ESP8266, making a stand-alone wifi enabled "thing". It has a pseudo-REST api, and serves a web page exposing the endpoints and usage statistics.
@@ -76,4 +76,31 @@ This is obtuse and I know it. I would prefer some sort of markup. But this is ea
 #define CCMSG_STOPADDR      "STOPADDR"
 ```
 
+# Endpoints
+All of these commands work with either GET or POST. I didn't set out to be REST-ful really so its not perfect.
 
+uri | operation | params
+----|-----------|--------
+"/" | Serves the root web page that exposes nearly all of the other endpoints | none
+"/stop" | Stops the display sequence.|none
+"/run" | Starts the display message.|none
+"/sequence" | Sets up a play list of up to 32 items in any order. | First parameter must by all digits and len < 32
+"/rebootdisplay" | Cuts power off to display for five seconds then restores it. | none
+"/settime" | Sets the time for the built in real-time clock. The current time can be displayed in a message using the TIME command. Mine is broken and always shows the time it was set. | time = [0-9]{4}, am=[YN]
+"/cmd" | Runs any one command. | First argument must be one of the command tokens above.
+"/str" | Sends a string. | First argument must be a string of characters whose ASCII values are legal to the CC784.
+"/signoff" | Cuts power to the sign. | none
+"/signon" | Restores pwower to the sign. | none
+"/program" | Replaces the message in a bank. | bank = [0-9], msg = <you message>
+
+# Tricks and Tips
+I configure my router to assign the Adafruit Huzzah ESP8266 breakout board a "static IP" and assign it the name "colorcells." This makes it very easy to find.
+
+To quickly set the message banks, put each message in a file, one per line and use this bash script:
+
+```bash
+$  x=0; head -10 pithysayings | while read line; do \
+    curl -G -v "http://colorcells/program" \
+    --data-urlencode "bank=$x" \
+    --data-urlencode "msg=$line"; ((x++)); done
+```
