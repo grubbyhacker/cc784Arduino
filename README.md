@@ -7,6 +7,10 @@ This is the code behind my wifi-enabled ColorCells CC784 LED message board. It u
 Several years ago somebody gave me one of these LED message boards. They were going to throw it away because the programmer was broken. I figured I would do something with it some day. That day has come. In this project I mate an old ColorCells message board with an ESP8266, making a stand-alone wifi enabled "thing". It has a pseudo-REST api, and serves a web page exposing the endpoints and usage statistics.
 
 # Serial
+
+**BIG DISCLAIMER:**
+According to this device's documentation its supposed to by powered with 9V _AC_. However, I use a 9V _DC_ power supply. This is probably why I get 5V TTL level signals out of it when its supposed to be RS232 compatible. I really don't know. If you connect a micro controller up to this device you take responsibility for the results. The _right_ way is likely to power the sign using 9V AC, and use a **MAX232** to do the talking.
+
 The CC784 sports an RS232 serial interface for programming via a computer or handheld device. Internally the logic chips run 5v and Serial TTL works fine, but uses inverted logic (logic 1 is low voltage, and logic 0 is approaching 5v.) According to the documentation:
 * 300 bps
 * 8 bits
