@@ -178,18 +178,7 @@ void handleRoot() {
 
 void handleNotFound() {
   beginHandler();
-  String message = "File Not Found\n\n";
-  message += "URI: ";
-  message += server.uri();
-  message += "\nMethod: ";
-  message += (server.method() == HTTP_GET) ? "GET" : "POST";
-  message += "\nArguments: ";
-  message += server.args();
-  message += "\n";
-  for (uint8_t i = 0; i < server.args(); i++) {
-    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
-  }
-  endHandler(404, message.c_str());
+  endHandler(404, "File not found.");
 }
 
 void handleStop() {
@@ -227,15 +216,15 @@ void handleSequence() {
     return;
   }
 
-  server.arg(0).toCharArray(paramValue, 33);
-  logger.print("Sequence: ");
-  logger.println(paramValue);
-
-  if (strlen(paramValue) > 32) {
-    logger.println("Bad Request: Maximum of 32 items in sequence.");
+  if (server.arg(0).length() > 32) {
+    logger.println("Bad Request: Maximum of 32 items are allowed in a sequence.");
     endHandler(400);
     return;
   }
+  
+  server.arg(0).toCharArray(paramValue, 33);
+  logger.print("Sequence: ");
+  logger.println(paramValue);
 
   char *pch = paramValue;
   while (*pch) {
@@ -266,9 +255,9 @@ void handleSequence() {
 void handleRebootDisplay() {
   beginHandler();
   if ((millis() - signStartMillis) > SIGN_RESTART_LIMIT_MILLIS) {
-    digitalWrite(RELAYPIN, 1);
-    delay(5000);
     digitalWrite(RELAYPIN, 0);
+    delay(5000);
+    digitalWrite(RELAYPIN, 1);
     signStartMillis = millis();
     endHandler(200, "Reboot Completed.");
   } else {
@@ -377,7 +366,7 @@ void setup() {
   server.on("/signoff", []() {
     beginHandler();
     if ((millis() - signStartMillis) > SIGN_RESTART_LIMIT_MILLIS) {
-      digitalWrite(RELAYPIN, 1);
+      digitalWrite(RELAYPIN, 0);
       signStartMillis = millis();
       endHandler(200, "Sign is off.");
     } else {
@@ -388,7 +377,7 @@ void setup() {
   server.on("/signon", []() {
     beginHandler();
     if ((millis() - signStartMillis) > SIGN_RESTART_LIMIT_MILLIS) {
-      digitalWrite(RELAYPIN, 0);
+      digitalWrite(RELAYPIN, 1);
       signStartMillis = millis();
       endHandler(200, "Sign is on.");
     } else {
@@ -417,6 +406,8 @@ void setup() {
   ss.println(">");
 
   signStartMillis = millis();
+  // Turn the sign on
+  digitalWrite(RELAYPIN, 1);
 }
 
 void loop() {
