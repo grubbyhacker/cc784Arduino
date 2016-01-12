@@ -112,3 +112,4 @@ $  x=0; head -10 pithysayings | while read line; do \
     --data-urlencode "bank=$x" \
     --data-urlencode "msg=$line"; ((x++)); done
 ```
+Here is a quick [screencast](https://youtu.be/Ts08yyjKaq8) of the UI, with my attempt at showing the sign in a webcam overlay at the same time.
