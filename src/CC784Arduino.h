@@ -20,6 +20,8 @@
  *  
  *  The protocol will be documented on github.
  */
+#ifndef CC784Arduino_h
+#define CC784Arduino_h
 
 #define COMMAND_CHAR_SIZE 15
 #define SERIAL_DELAY_MS   10
@@ -80,12 +82,12 @@ typedef struct {
 
 int strncasecmp( _CONST char*, _CONST char*, size_t);
 
-class ColorCells784 {
+class CC784Arduino {
   public:
-    ColorCells784(Print* p): _logger(p), _rx_timeout_ms(WAIT_MS) {};
+    CC784Arduino(Print* p): _logger(p), _rx_timeout_ms(WAIT_MS) {};
 
-    void setup() {
-      Serial.begin(300);
+    void begin(Stream &serial) {
+      _serial = &serial;
     }
 
     int sendCommand(const char*);
@@ -98,8 +100,10 @@ class ColorCells784 {
   protected:
     int sendControlCode(unsigned int);
 
+    Stream* _serial;
     Print* _logger;
     CCMetrics _metrics;
     unsigned long _rx_timeout_ms;
 };
+#endif
 

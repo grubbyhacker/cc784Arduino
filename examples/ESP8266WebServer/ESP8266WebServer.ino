@@ -3,9 +3,9 @@
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <SoftwareSerial.h>
+#include <CC784Arduino.h>
 
 #include "sessionlogger.h"
-#include "colorcells784.h"
 #include "html.h"
 
 /*
@@ -34,7 +34,7 @@ unsigned long signStartMillis = 0;
 ESP8266WebServer server(80);
 SoftwareSerial ss(RXPIN, TXPIN);
 SessionLogger logger(ss, sessionbuffer, SESSION_BUFFER_SIZE);
-ColorCells784 cc(&logger);
+CC784Arduino cc(&logger);
 
 int metrics_count_requests = 0;
 int metrics_200_responses = 0;
@@ -323,7 +323,8 @@ void setup() {
   digitalWrite(LEDPIN, 0);
   digitalWrite(RELAYPIN, 0);
 
-  cc.setup();
+  Serial.begin(300);
+  cc.begin(Serial);
   ss.begin(9600);
   WiFi.begin(ssid, password);
   ss.println("");

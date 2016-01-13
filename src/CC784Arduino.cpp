@@ -1,5 +1,5 @@
 #include <arduino.h>
-#include "colorcells784.h"
+#include "CC784Arduino.h"
 
 /*
  * TODO: find reference for where I lifted this implementation off the web if necessary.
@@ -59,7 +59,7 @@ CommandT _commands[] = {
  * Sends a string of ASCII characters. Returns failure on any chars <32 (space) or >125, or
  * the two special codes 94 & 95 (used for Set Addr and Time.
  */
-int ColorCells784::sendString(const char *msg) {
+int CC784Arduino::sendString(const char *msg) {
   int errs = 0;
   _metrics.countStrings++;
   _logger->print("String: ");
@@ -89,13 +89,13 @@ int ColorCells784::sendString(const char *msg) {
  * is needed only for the SETTIME command which can take 2-5 seconds before
  * it responds to the last digit.
  */
-int ColorCells784::sendString(const char *msg, unsigned long rx_timeout_ms) {
+int CC784Arduino::sendString(const char *msg, unsigned long rx_timeout_ms) {
   _rx_timeout_ms = rx_timeout_ms;
   sendString(msg);
   _rx_timeout_ms = WAIT_MS;
 }
 
-int ColorCells784::processColorCellsProtocol(char *input) {
+int CC784Arduino::processColorCellsProtocol(char *input) {
   char* pch = strtok (input, CC_SEPARATOR);
   while (pch != NULL)
   {
@@ -121,7 +121,7 @@ int ColorCells784::processColorCellsProtocol(char *input) {
   return 1;
 }
 
-int ColorCells784::sendCommand(const char *cmd) {
+int CC784Arduino::sendCommand(const char *cmd) {
   _logger->print("Command: ");
   _logger->println(cmd);
   for (int i = 0; i < sizeof(_commands) / sizeof(CommandT); i++) {
@@ -135,23 +135,23 @@ int ColorCells784::sendCommand(const char *cmd) {
   return 0;
 }
 
-int ColorCells784::sendControlCode(unsigned int ch) {
+int CC784Arduino::sendControlCode(unsigned int ch) {
   _metrics.txBytes++;
-  while (-1 != Serial.peek()) {
+  while (-1 != _serial->peek()) {
     _logger->print("found: ");
-    _logger->println(Serial.read());
+    _logger->println(_serial->read());
     _metrics.rxBytes++;
     _metrics.countIllegalCharsOnWire++;
     delay(1);
   }
   _logger->print("Sending: ");
   _logger->print(ch, DEC);
-  Serial.write(ch);
+  _serial->write(ch);
   _metrics.txBytes++;
   _logger->print(":");
   unsigned int retry = 1;
   unsigned long startmillis = millis();
-  while (!Serial.available()) {
+  while (!_serial->available()) {
     if ((millis() - startmillis) > _rx_timeout_ms) {
       _logger->println("Timeout.");
       _metrics.countTimeouts++;
@@ -162,7 +162,7 @@ int ColorCells784::sendControlCode(unsigned int ch) {
     }
     delay(SERIAL_DELAY_MS);
   }
-  _logger->println(Serial.read());
+  _logger->println(_serial->read());
   _metrics.rxBytes++;
   return 1;
 }
