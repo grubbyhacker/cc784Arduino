@@ -34,7 +34,7 @@ unsigned long signStartMillis = 0;
 ESP8266WebServer server(80);
 SoftwareSerial ss(RXPIN, TXPIN);
 SessionLogger logger(ss, sessionbuffer, SESSION_BUFFER_SIZE);
-CC784Arduino cc(&logger);
+CC784Arduino cc(logger);
 
 int metrics_count_requests = 0;
 int metrics_200_responses = 0;

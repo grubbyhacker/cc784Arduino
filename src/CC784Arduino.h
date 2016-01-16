@@ -23,45 +23,41 @@
 #ifndef CC784Arduino_h
 #define CC784Arduino_h
 
-#define COMMAND_CHAR_SIZE 15
+#define COMMAND_CHAR_SIZE 5
 #define SERIAL_DELAY_MS   10
 #define WAIT_MS           500
-#define ERROR_TIMEOUT     -1
-#define ERROR_BADCOMMAND  -2
 #define CC_SEPARATOR      ","
-#define CC_COMMAND        'c'
+#define CC_COMMAND        '_'
 #define CC_STRING         's'
 
 // Command definitions
 #define CCMSG_STOP          "STOP"
-#define CCMSG_SPEED         "SPEED"
-#define CCMSG_SEQ           "SEQ"
-#define CCMSG_TOP           "TOP"
-#define CCMSG_PAUSE         "PAUSE"
+#define CCMSG_SPEED         "SPEE"
+#define CCMSG_SEQ           "SEQQ"
+#define CCMSG_TOP           "TOPP"
+#define CCMSG_PAUSE         "PAUS"
 #define CCMSG_BEEP          "BEEP"
 #define CCMSG_PROG          "PROG"
-#define CCMSG_RUN           "RUN"
-#define CCMSG_CLEAR         "CLEAR"
-#define CCMSG_BCRAWL        "BCRAWL"
-#define CCMSG_BIG           "BIG"
-#define CCMSG_NORMAL        "NORMAL"
+#define CCMSG_RUN           "RUNN"
+#define CCMSG_CLEAR         "CLER"
+#define CCMSG_BCRAWL        "BCRL"
+#define CCMSG_BIG           "BIGG"
+#define CCMSG_NORMAL        "NORM"
 #define CCMSG_BOLD          "BOLD"
-#define CCMSG_ITALIC        "ITALIC"
-#define CCMSG_FLASH         "FLASH"
-#define CCMSG_FORECOLOR     "FORECOLOR"
-#define CCMSG_BACKCOLOR     "BACKCOLOR"
-#define CCMSG_SETTIME       "SETTIME"
-#define CCMSG_CRAWL         "CRAWL"
+#define CCMSG_ITALIC        "ITLC"
+#define CCMSG_FLASH         "FLSH"
+#define CCMSG_FORECOLOR     "FORE"
+#define CCMSG_BACKCOLOR     "BACK"
+#define CCMSG_SETTIME       "SETT"
+#define CCMSG_CRAWL         "CRWL"
 #define CCMSG_JUMP          "JUMP"
-#define CCMSG_WIPEUP        "WIPEUP"
-#define CCMSG_WIPEDN        "WIPEDN"
+#define CCMSG_WIPEUP        "WIPU"
+#define CCMSG_WIPEDN        "WIPD"
 #define CCMSG_CAPS          "CAPS"
-#define CCMSG_SHIFT         "SHIFT"
-#define CCMSG_GRAPH         "GRAPH"
-#define CCMSG_MAGIC         "MAGIC"
-#define CCMSG_SETADDR       "SETADDR"
+#define CCMSG_SHIFT         "SHFT"
+#define CCMSG_GRAPH         "GRPH"
+#define CCMSG_MAGIC         "MAGC"
 #define CCMSG_TIME          "TIME"
-#define CCMSG_STOPADDR      "STOPADDR"
 
 typedef struct {
   char cmd[COMMAND_CHAR_SIZE];
@@ -80,11 +76,11 @@ typedef struct {
   int countProtocolErrors;
 } CCMetrics;
 
-int strncasecmp( _CONST char*, _CONST char*, size_t);
+int _strncasecmp(const char*, const char*, size_t);
 
 class CC784Arduino {
   public:
-    CC784Arduino(Print* p): _logger(p), _rx_timeout_ms(WAIT_MS) {};
+    CC784Arduino(Print &p): _logger(&p), _rx_timeout_ms(WAIT_MS) {};
 
     void begin(Stream &serial) {
       _serial = &serial;
@@ -93,13 +89,14 @@ class CC784Arduino {
     int sendCommand(const char*);
     int sendString(const char*);
     int sendString(const char*, unsigned long);
-    int processColorCellsProtocol(char*);
+    int processColorCellsProtocol(const char*);
 
     CCMetrics* getMetrics() { return &_metrics;}
 
   protected:
-    int sendControlCode(unsigned int);
 
+	 int validateChar(const char c);
+    int sendControlCode(unsigned int);
     Stream* _serial;
     Print* _logger;
     CCMetrics _metrics;

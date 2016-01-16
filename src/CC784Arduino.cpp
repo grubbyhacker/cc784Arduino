@@ -1,10 +1,17 @@
-#include <arduino.h>
+#ifndef _TEST_
+#include <Arduino.h>
+#else
+#include "mock_arduino.h"
+#endif
+
 #include "CC784Arduino.h"
 
 /*
  * TODO: find reference for where I lifted this implementation off the web if necessary.
+ * I prepended the name of this implementation so that it does not cause collisions
+ * when I compile it using standard C++ libs for non-Arduino.
  */
-int strncasecmp(
+int _strncasecmp(
   _CONST char *s1,
   _CONST char *s2,
   size_t n)
@@ -50,11 +57,24 @@ CommandT _commands[] = {
   {CCMSG_SHIFT,     29},
   {CCMSG_GRAPH,     30},
   {CCMSG_MAGIC,     31},
-  {CCMSG_SETADDR,   94}, // Set Addr
   {CCMSG_TIME,      95}, // Time
-  {CCMSG_STOPADDR,  126} // Stop Addr
 };
 
+/*
+ * validateChar returns 1 unless the char is not a valid string char for
+ * the CC784.
+ */
+int CC784Arduino::validateChar(const char c) {
+	if (c > 125 || c < 32 || 94==c || 95==c) {
+      _logger->print("Illegal character found in string: ");
+      _logger->print(c, DEC);
+      _logger->println();
+      _metrics.countBadChars++;
+      return 0;
+   }
+	return 1;
+}
+	
 /*
  * Sends a string of ASCII characters. Returns failure on any chars <32 (space) or >125, or
  * the two special codes 94 & 95 (used for Set Addr and Time.
@@ -65,19 +85,14 @@ int CC784Arduino::sendString(const char *msg) {
   _logger->print("String: ");
   _logger->println(msg);
   while (*msg) {
-    if (*msg > 125 || *msg < 32 || 94==*msg || 95==*msg) {
-      _logger->print("Bad character found in string: ");
-      _logger->print(*msg, DEC);
-      _logger->println();
-      _metrics.countBadChars++;
-      return 0;
-    }
-    if (0 == sendControlCode(*msg)) {
-      if (++errs > 5) {
-        _logger->println("Too many serial RX errors, bailing.");
-        return 0;
-      }
-      
+	 if (!validateChar(*msg)) {
+	 	return 0;
+	 }
+  	 if (0 == sendControlCode(*msg)) {
+     	if (++errs > 5) {
+     		_logger->println("Too many serial RX errors, bailing.");
+     		return 0;
+		}
     }
     msg++;
   }
@@ -91,41 +106,44 @@ int CC784Arduino::sendString(const char *msg) {
  */
 int CC784Arduino::sendString(const char *msg, unsigned long rx_timeout_ms) {
   _rx_timeout_ms = rx_timeout_ms;
-  sendString(msg);
+  int ret = sendString(msg);
   _rx_timeout_ms = WAIT_MS;
+  return ret;
 }
 
-int CC784Arduino::processColorCellsProtocol(char *input) {
-  char* pch = strtok (input, CC_SEPARATOR);
-  while (pch != NULL)
-  {
-    _logger->print("Token: ");
-    _logger->println(pch);
-
-    switch (tolower(*pch)) {
-      case CC_COMMAND:
-        sendCommand(&pch[2]);
-        break;
-      case CC_STRING:
-        sendString(&pch[2]);
-        break;
-      default:
-        _logger->print("Bad command qualifier, must be one of [CcSs]: ");
-        _logger->println(pch);
-        _metrics.countProtocolErrors++;
-        return 0;
-        break;
-    }
-    pch = strtok (NULL, CC_SEPARATOR);
-  }
-  return 1;
+int CC784Arduino::processColorCellsProtocol(const char *m) {
+	char cmd[5];
+	memset(cmd, 0 , 5);
+	while (*m) {
+		if (*m == '_') {
+			for (int i=0; i<4; i++) {
+				++m;
+				if (*m) {
+					  cmd[i] = *m;
+				} else {
+					_logger->print("Commands must be four chars long. Only found: ");
+					_logger->print(i);
+					_logger->println(" chars.");
+					return 0;
+				}
+			}
+			sendCommand(cmd);
+		} else {
+			if (!validateChar(*m)) {
+				return 0;
+			}
+			sendControlCode(*m);
+		}
+		m++;
+	}
+	return 1;
 }
 
 int CC784Arduino::sendCommand(const char *cmd) {
   _logger->print("Command: ");
   _logger->println(cmd);
   for (int i = 0; i < sizeof(_commands) / sizeof(CommandT); i++) {
-    if (strncasecmp(cmd, _commands[i].cmd, COMMAND_CHAR_SIZE) == 0) {
+    if (_strncasecmp(cmd, _commands[i].cmd, COMMAND_CHAR_SIZE) == 0) {
       _metrics.countAttemptedCommands++;
       return sendControlCode(_commands[i].ascii);
    }
@@ -137,14 +155,22 @@ int CC784Arduino::sendCommand(const char *cmd) {
 
 int CC784Arduino::sendControlCode(unsigned int ch) {
   _metrics.txBytes++;
+  /*
+	* Look for any chars being sent from the sign to make
+	* sure we are synchronized. This usually only happens
+	* if there is a mistake on my end.
+	*/
+  unsigned int cnt = 0;
   while (-1 != _serial->peek()) {
     _logger->print("found: ");
     _logger->println(_serial->read());
     _metrics.rxBytes++;
     _metrics.countIllegalCharsOnWire++;
     delay(1);
+	 if (++cnt > 100) {
+		break;
+	 }
   }
-  _logger->print("Sending: ");
   _logger->print(ch, DEC);
   _serial->write(ch);
   _metrics.txBytes++;
