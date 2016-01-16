@@ -28,7 +28,8 @@ The documentation specifies exactly what pins to hookup for an RS232 connection.
 * Pins 2 and 9 are tied to ground
 * Pin 3 to Arduino RX
 * Pin 6 to Arduino TX
-Also its important that these connections are made when the sign is off because it detects them at boot and will not change dynamically afterwards.
+
+Also it is important that these connections are made when the sign is off because it detects them at boot and will not change dynamically afterwards.
 
 ![Breadboarding the ESP8266 and 4049](http://i.imgur.com/fm9he2R.jpg)
 
