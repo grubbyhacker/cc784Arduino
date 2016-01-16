@@ -1,10 +1,10 @@
-# cc784Arduino
-This is the code behind my wifi-enabled ColorCells CC784 LED message board. It uses an ESP8266 and Arduino libraries to build a web front-end and REST-like API for this old device.
+# CC784Arduino
+This is the code behind my wifi-enabled ColorCells CC784 LED message board. It uses an ESP8266 and Arduino libraries to build a web front-end and REST-like API for this old device. I packaged the serial communication with the CC784 into an easy to use Arduino library so you can do whatever you want with it.
 
 ![Image of what the UI looks like](screenshots/esp8266_cc784.png "This is web page is completely served from the ESP8266 itself, except for the background image.")
 
 # BIG DISCLAIMER
-According to this device's documentation its supposed to by powered with 9V _AC_. However, I use a 9V _DC_ power supply. After examining the traces closely using a mulimeter it seems clear to me that this is a 5v sign. There is one _bridge rectifier_ that converts the incoming 9VAC to 9VDC. The positive line of the bridge rectifier goes directly to the one and only voltage regulator on the board and it is 5V. There is simply no trace that connects to the 9VAC or 9VDC other than the 5V regulator. In fact, I de-soldered that bridge rectifier, and bypassed its pads with solder, and simply power the sign always with a 9VDC 3A power adapter. Its actually not easy to find AC/AC power adapters at the power ratings these sign call for. I believe they originally came with a 5.5A 9VAC power supply which is a lot of power!
+According to this device's documentation its supposed to by powered with 9V _AC_. However, I use a 9V _DC_ power supply. After examining the traces closely using a mulimeter it seems clear to me that this is a 5v sign. There is one _bridge rectifier_ that converts the incoming 9VAC to 9VDC. The positive line of the bridge rectifier goes directly to the one and only voltage regulator on the board and it is 5V. There is simply no trace that connects to the 9VAC or 9VDC other than the 5V regulator. In fact, I de-soldered that bridge rectifier, and bypassed its pads with solder, and simply power the sign always with a 9VDC 3A power adapter. Its actually not easy to find AC/AC power adapters at the power ratings these sign call for.
 
 This is all documented in pictures [here](http://imgur.com/a/3OZrd). However this is all at your own risk. You can easily fry your micro controller or sign or both. This sign can draw upwards of 3A which can do a lot of damage. So beware, and don't blame me if you try to do what I did and see blue smoke or catch on fire.
 
@@ -36,56 +36,81 @@ Also its important that these connections are made when the sign is off because 
 The CC784 has one very important rule: send one byte at a time, and wait for it to echo that byte back to you before proceeding. If it ever does not echo that byte back, then something bad has happened. There are three types of codes that can be sent to the CC784 over its serial programming interface:
 * Raw ASCII characters intended either as characters for display or to answer questions such as which bank to program.
 * Control codes intended to modify the current message bank that you are editing such as bold, flash, etc...
-* Control codes intended to modify the global state of the device such as stop, run, program.
-As far as I can determine when the CC784 is in the "Running" state, it will not respond to any serial commands except STOP.
+* Control codes intended to modify the global state of the device such as stop, run, program, sequence or set time.
+As far as I can determine when the CC784 is in the "Running" state, it will not respond to any serial commands except STOP or SETTIME.
 
 # My Protocol
 I simplified the 3 types of codes into just two:
 * ASCII code for a **String**
 * Control code for a **Command**
 
-To identify a **string**, prefix it with "s:".  To identify a **command**, prefix it with "c:". Sequence a list of strings and commands by separating them with commas.  For example, to write a message that says: "I love **pie**."
+The protocol assumes that all characters are part of a an ASCII string, unless it is prepended with an **underscore**. In this way you can intermix markup and strings easily. The sign is not very consistent on the meaning of the various markup commands, since some affect the entire message, some the next word, and some remain in effect until reverted by another command.
+
+Here is an example:  a message that says "I love **pie**."
 
 ```
-s:I love ,c:bold,s:pie,c:normal,.
+I love _BOLDpie_NORM.
 ```
 
-This is obtuse and I know it. I would prefer some sort of markup. But this is easy to parse from a serial debug console for testing and I have not come up with anything better yet. And yes this means that *commas* cannot be sent to the sign right now. The commands are documented in the manual and their names for my protocol are in the code:
+The commands are documented in the manual and their names for my protocol are in the code. Each one is limited to just for characters.
 
 ```Arduino
 #define CCMSG_STOP          "STOP"
-#define CCMSG_SPEED         "SPEED"
-#define CCMSG_SEQ           "SEQ"
-#define CCMSG_TOP           "TOP"
-#define CCMSG_PAUSE         "PAUSE"
+#define CCMSG_SPEED         "SPEE"
+#define CCMSG_SEQ           "SEQQ"
+#define CCMSG_TOP           "TOPP"
+#define CCMSG_PAUSE         "PAUS"
 #define CCMSG_BEEP          "BEEP"
 #define CCMSG_PROG          "PROG"
-#define CCMSG_RUN           "RUN"
-#define CCMSG_CLEAR         "CLEAR"
-#define CCMSG_BCRAWL        "BCRAWL"
-#define CCMSG_BIG           "BIG"
-#define CCMSG_NORMAL        "NORMAL"
+#define CCMSG_RUN           "RUNN"
+#define CCMSG_CLEAR         "CLER"
+#define CCMSG_BCRAWL        "BCRL"
+#define CCMSG_BIG           "BIGG"
+#define CCMSG_NORMAL        "NORM"
 #define CCMSG_BOLD          "BOLD"
-#define CCMSG_ITALIC        "ITALIC"
-#define CCMSG_FLASH         "FLASH"
-#define CCMSG_FORECOLOR     "FORECOLOR"
-#define CCMSG_BACKCOLOR     "BACKCOLOR"
-#define CCMSG_SETTIME       "SETTIME"
-#define CCMSG_CRAWL         "CRAWL"
+#define CCMSG_ITALIC        "ITLC"
+#define CCMSG_FLASH         "FLSH"
+#define CCMSG_FORECOLOR     "FORE"
+#define CCMSG_BACKCOLOR     "BACK"
+#define CCMSG_SETTIME       "SETT"
+#define CCMSG_CRAWL         "CRWL"
 #define CCMSG_JUMP          "JUMP"
-#define CCMSG_WIPEUP        "WIPEUP"
-#define CCMSG_WIPEDN        "WIPEDN"
+#define CCMSG_WIPEUP        "WIPU"
+#define CCMSG_WIPEDN        "WIPD"
 #define CCMSG_CAPS          "CAPS"
-#define CCMSG_SHIFT         "SHIFT"
-#define CCMSG_GRAPH         "GRAPH"
-#define CCMSG_MAGIC         "MAGIC"
-#define CCMSG_SETADDR       "SETADDR"
+#define CCMSG_SHIFT         "SHFT"
+#define CCMSG_GRAPH         "GRPH"
+#define CCMSG_MAGIC         "MAGC"
 #define CCMSG_TIME          "TIME"
-#define CCMSG_STOPADDR      "STOPADDR"
 ```
 
-# Endpoints
-All of these commands work with either GET or POST. I didn't set out to be REST-ful really so its not perfect.
+# CC784Arduino Usage
+To use the library, define a global variable of type CC784Arduino and pass it something that implements the Print interface to its constructor, like SoftwareSerial, PString or HardwareSerial. The purpose of this is to provide debug logging.
+```Arduino
+CC784Arduino cc(debugSerial);
+```
+Then, in the setup() function, initialize the library with the Serial library of your choice to talk to the CC784. This library must already be initialized and set to 300 baud.
+```Arduino
+void setup() {
+    Serial.begin(300);
+    cc.begin(Serial);
+}
+```
+To use the protocol just call the "processColorCellsProtocol" function in your program. In the following example, the message insructs the sign to:
+* stop
+* program bank 1
+* clear bank 1
+* Set the bank 1 to: "this is the new message for bank 1
+* Sequence only bank 1
+* run
+```Arduino
+    ...
+    cc.processColorCellsProtocol("_STOP_PROG1_CLERthis is the new message for bank 1_SEQ1_RUN")
+    ...
+```
+
+# ESP8266WebServer Example
+I provided an example built on the ESP8266WebServer. All of these commands work with either GET or POST. I didn't set out to be REST-ful really so its not perfect.
 
 uri | operation | params
 ----|-----------|--------
