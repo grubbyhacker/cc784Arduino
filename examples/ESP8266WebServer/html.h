@@ -1,6 +1,6 @@
 /*
  * Large string blobs for serving the root web page. The blobs are stored in PROGMEM to save runtime memory.
- * 
+ *
  * TODO: modify Esp8266WebServer to support PROGMEM streaming of content. Right now storing these strings in
  *       PROGMEM is a waste since the entire thing has to be pulled into memory anyway.
  */
@@ -12,15 +12,15 @@
  */
 void printProgStr(const prog_char str[], Print* p)
 {
-  char c;
-  unsigned long bytesread = 0;
-  if(!str) return;
-  while((c = pgm_read_byte(str++))) {
-    p->write(c);
-    if (++bytesread % 1000 == 0) {
-      yield(); // just to make sure the esp chip gets its time
+    char c;
+    unsigned long bytesread = 0;
+    if(!str) return;
+    while((c = pgm_read_byte(str++))) {
+        p->write(c);
+        if (++bytesread % 1000 == 0) {
+            yield(); // just to make sure the esp chip gets its time
+        }
     }
-  }
 }
 
 /*
