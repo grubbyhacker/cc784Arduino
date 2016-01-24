@@ -26,9 +26,7 @@
 #define COMMAND_CHAR_SIZE 5
 #define SERIAL_DELAY_MS   10
 #define WAIT_MS           500
-#define CC_SEPARATOR      ","
 #define CC_COMMAND        '_'
-#define CC_STRING         's'
 
 // Command definitions
 #define CCMSG_STOP          "STOP"
@@ -86,6 +84,14 @@ public:
         _serial = &serial;
     }
 
+    // high-level apis
+    int setSequence(const char*);
+    int programBank(const char, const char*);
+    int stop();
+    int run();
+    int setTime(const char*, bool);
+
+    // primitive apis
     int sendCommand(const char*);
     int sendString(const char*);
     int sendString(const char*, unsigned long);

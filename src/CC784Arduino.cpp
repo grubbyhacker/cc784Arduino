@@ -192,3 +192,33 @@ int CC784Arduino::sendControlCode(unsigned int ch) {
     _metrics.rxBytes++;
     return 1;
 }
+
+int CC784Arduino::setSequence(const char* seq) {
+    return (sendCommand(CCMSG_STOP) &&
+            sendCommand(CCMSG_SEQ) &&
+            sendString(seq) &&
+            sendCommand(CCMSG_RUN));
+}
+int CC784Arduino::programBank(const char bank, const char* protocolMessage) {
+    return (sendCommand(CCMSG_STOP) &&
+            sendCommand(CCMSG_PROG) &&
+            sendControlCode(bank) &&
+            sendCommand(CCMSG_CLEAR) &&
+            processColorCellsProtocol(protocolMessage) &&
+            sendCommand(CCMSG_RUN));
+}
+int CC784Arduino::stop() {
+    return sendCommand(CCMSG_STOP);
+}
+int CC784Arduino::run() {
+    return sendCommand(CCMSG_RUN);
+}
+int CC784Arduino::setTime(const char* time, bool am) {
+    return (sendCommand(CCMSG_STOP) &&
+            sendCommand(CCMSG_SETTIME) &&
+            sendString(time, 5000) &&
+            (am? sendString("Y", 5000): sendString("N", 5000)) &&
+            sendCommand(CCMSG_RUN));
+}
+
+

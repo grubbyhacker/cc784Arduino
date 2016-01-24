@@ -183,7 +183,7 @@ void handleNotFound() {
 
 void handleStop() {
     beginHandler();
-    if (cc.sendCommand(CCMSG_STOP)) {
+    if (cc.stop()) {
         endHandler(200);
     } else {
         endHandler(500);
@@ -192,7 +192,7 @@ void handleStop() {
 
 void handleRun() {
     beginHandler();
-    if (cc.sendCommand(CCMSG_RUN)) {
+    if (cc.run()) {
         endHandler(200);
     } else {
         endHandler(500);
@@ -228,23 +228,16 @@ void handleSequence() {
 
     char *pch = paramValue;
     while (*pch) {
-        logger.print("Examining sequence character: ");
-        logger.print(*pch);
-        logger.print(" ");
-        logger.print(*pch, DEC);
-        logger.println();
         if ((*pch) < 48 || (*pch) > 57) {
-            logger.println("Bad Request: Only numbers can be passed to sequence.");
-            endHandler(400);
+            logger.print("Bad Request: Only numbers can be passed to sequence. found:");
+        	logger.println(*pch, DEC);
+            endHandler(400, "Non numeric charcter in sequence.");
             return;
         }
         ++pch;
     }
 
-    if (cc.sendCommand(CCMSG_STOP) &&
-            cc.sendCommand(CCMSG_SEQ) &&
-            cc.sendString(paramValue) &&
-            cc.sendCommand(CCMSG_RUN))
+    if (cc.setSequence(paramValue))
     {
         endHandler(200);
         return;
@@ -278,12 +271,7 @@ void programBank(const char* bank, const char* msg) {
     ss.print("Decoded arg: ");
     ss.println(decodedParam);
 
-    if (cc.sendCommand(CCMSG_STOP) &&
-            cc.sendCommand(CCMSG_PROG) &&
-            cc.sendString(bank) &&
-            cc.sendCommand(CCMSG_CLEAR) &&
-            cc.processColorCellsProtocol(decodedParam) &&
-            cc.sendCommand(CCMSG_RUN))
+	if (cc.programBank(bank[0], decodedParam))    
     {
         endHandler(200);
         return;
@@ -306,10 +294,11 @@ void handleSetTime() {
         endHandler(400, "Missing am parameter.");
         return;
     }
-    if (cc.sendCommand(CCMSG_STOP) &&
-            cc.sendCommand(CCMSG_SETTIME) &&
-            cc.sendString(server.arg("time").c_str(), 5000) &&
-            cc.sendString(server.arg("am").c_str()), 5000)
+	bool am = false;
+	if (server.arg("am") == "Y" || server.arg("am") == "y") {
+		am = true;
+	}
+	if (cc.setTime(server.arg("time").c_str(), am))
     {
         endHandler(200);
         return;

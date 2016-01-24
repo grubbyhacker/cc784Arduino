@@ -173,13 +173,9 @@ var showinfomessage = function() {
                                                                            <h1>WIFI Enabled CC784</h1>
                                                                            <p></p>
                                                                            <h3 id="message">Change Message</h3>
-                                                                                   <p></p>
-                                                                                   Messages follow a simple protocol: <ul>
-                                                                                   <li>Every string of characters must be preceeded by "s:"</li>
-                                                                                   <li>Every color cells command must be preceeded by "c:"</li>
-                                                                                   <li>Sequences of strings and commands must be separated by a comma.</li></ul>
-                                                                                   For example: "s:Hellow World." will give you a simple string of yellow font. But
-                                                                                   "s:Hello ,c:BOLD,s:World,c:NORMAL,s:." will give you the same string only with "World" in bold.
+																									<p></p>
+																									Add markup to your message using an underscore and a four letter command. For example:
+																									This is a _BOLDbold_NORM word.
                                                                                    <form action="/program" method="get"
                                                                                            target="result"><br>
                                                                                                    Select a message bank: <select name="bank">
