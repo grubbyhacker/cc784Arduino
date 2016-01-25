@@ -1,1 +1,11 @@
 CC784Arduino	KEYWORD1
+setSequence	KEYWORD2
+programBank	KEYWORD2
+run		KEYWORD2
+stop 		KEYWORD2
+setTime		KEYWORD2
+setSequence	KEYWORD2
+sendString	KEYWORD2
+sendCommand	KEYWORD2
+processColorCellsProtocol	KEYWORD2
+

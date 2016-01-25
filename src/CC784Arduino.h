@@ -23,6 +23,12 @@
 #ifndef CC784Arduino_h
 #define CC784Arduino_h
 
+#ifndef _TEST_
+#include <Arduino.h>
+#else
+#include "mock_arduino.h"
+#endif
+
 #define COMMAND_CHAR_SIZE 5
 #define SERIAL_DELAY_MS   10
 #define WAIT_MS           500
@@ -73,8 +79,6 @@ typedef struct {
     int countBadCommands;
     int countProtocolErrors;
 } CCMetrics;
-
-int _strncasecmp(const char*, const char*, size_t);
 
 class CC784Arduino {
 public:

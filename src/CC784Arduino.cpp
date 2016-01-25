@@ -1,9 +1,3 @@
-#ifndef _TEST_
-#include <Arduino.h>
-#else
-#include "mock_arduino.h"
-#endif
-
 #include "CC784Arduino.h"
 
 /*
@@ -11,9 +5,9 @@
  * I prepended the name of this implementation so that it does not cause collisions
  * when I compile it using standard C++ libs for non-Arduino.
  */
-int _strncasecmp(
-    _CONST char *s1,
-    _CONST char *s2,
+int _comparecasei(
+    const char *s1,
+    const char *s2,
     size_t n)
 {
     if (n == 0)
@@ -143,7 +137,7 @@ int CC784Arduino::sendCommand(const char *cmd) {
     _logger->print("Command: ");
     _logger->println(cmd);
     for (int i = 0; i < sizeof(_commands) / sizeof(CommandT); i++) {
-        if (_strncasecmp(cmd, _commands[i].cmd, COMMAND_CHAR_SIZE) == 0) {
+        if (_comparecasei(cmd, _commands[i].cmd, COMMAND_CHAR_SIZE) == 0) {
             _metrics.countAttemptedCommands++;
             return sendControlCode(_commands[i].ascii);
         }
