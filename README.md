@@ -1,5 +1,5 @@
 # CC784Arduino
-This is the code behind my wifi-enabled ColorCells CC784 LED message board. It uses an ESP8266 and Arduino libraries to build a web front-end and REST-like API for this old device. I packaged the serial communication with the CC784 into an easy to use Arduino library so you can do whatever you want with it.
+This is the code behind my wifi-enabled ColorCells CC784 LED message board. It uses an ESP8266 and Arduino libraries to build a web front-end and REST-like API for this old device. I packaged the serial communication with the CC784 into an easy to use Arduino library so you can do whatever you want with it. I provided my webserver example and another using an UNO and Serial console. Here is a picture of the webserver UI:
 
 ![Image of what the UI looks like](screenshots/esp8266_cc784.png "This is web page is completely served from the ESP8266 itself, except for the background image.")
 
@@ -9,11 +9,11 @@ According to this device's documentation its supposed to by powered with 9V _AC_
 This is all documented in pictures [here](http://imgur.com/a/3OZrd). However this is all at your own risk. You can easily fry your micro controller or sign or both. This sign can draw upwards of 3A which can do a lot of damage. So beware, and don't blame me if you try to do what I did and see blue smoke or catch on fire.
 
 # Introduction
-Several years ago somebody gave me one of these LED message boards. They were going to throw it away because the programmer was broken. I figured I would do something with it some day. That day has come. In this project I mate an old ColorCells message board with an ESP8266, making a stand-alone wifi enabled "thing". It has a pseudo-REST api, and serves a web page exposing the endpoints and usage statistics.
+Several years ago somebody gave me one of these LED message boards. They were going to throw it away because the programmer was broken. I figured I would do something with it some day. That day has come. In this project I mate an old ColorCells message board with an ESP8266, making a stand-alone wifi enabled "thing". It has a pseudo-REST api, and serves a web page exposing the endpoints and usage statistics. I packaged this code into an Arduino library that any Arduino flavor should be able to use, and made the webserver one of the example programs.
 
 # Serial
 
-The CC784 sports an RS232 serial interface for programming via a computer or handheld device. Internally the logic chips run 5v and Serial TTL works fine, but uses inverted logic (logic 1 is low voltage, and logic 0 is approaching 5v.) According to the documentation:
+The CC784 sports an RS232 serial interface for programming via a computer. However, internally the logic chips run 5v and Serial seems to operate at 5v TTL levels. I verified this with an oscilliscope. I'm not sure how this ever worked with RS232. To complicate things the sign uses inverted logic (logic 1 is low voltage, and logic 0 is approaching 5v.) According to the documentation here is its Serial protocol expectations:
 * 300 bps
 * 8 bits
 * No parity
@@ -24,12 +24,12 @@ In practice I have not found it necessary to enable 2 stop bits so I stopped set
 I tested SoftwareSerial using an Arduino UNO at 300 baud with the inverse logic bit set and it works fine. Unfortunately I could not get a reliable version of SoftwareSerial to work at 300 baud on the ESP8266. So I settled for HardwareSerial plus an [HEF4049B Hex Inverting Buffer](http://www.nxp.com/documents/data_sheet/HEF4049B.pdf). I chose the [Adafruit Huzzah ESP8266](https://learn.adafruit.com/adafruit-huzzah-esp8266-breakout) because it has level-shifting built-in to the RX pin before realizing that the HEF4049B will actually level-shift _down_ to 3v3 for me - if powered from the 3v3 output pin of the Huzzah. Luckily the 3v3 TX pin was able to talk to the 5v TTL sign without shifting up.
 
 # Physical Connection to the CC784
-The documentation specifies exactly what pins to hookup for an RS232 connection. Ironically those pins are not labeled. Through trial and error and searching I figured it out. My CC784 has an IDC10 (or IDC2x5) connector. Pin #1 is labeled, and it is numbered alternating top-to-bottom. All 5 *odd* numbered pins are on the top, and all 5 *even* numbered pins are on the bottom. Only four of the ten pins are needed. And just to confuse you in the picture below the sign in "upside down" relative to the camera.
+The documentation specifies exactly what pins to hookup for an RS232 connection. Ironically those pins are not labeled. Through trial and error and searching I figured it out. My CC784 has an IDC10 (or IDC2x5) connector. Pin #1 is labeled, and it is numbered alternating top-to-bottom. All 5 *odd* numbered pins are on the top, and all 5 *even* numbered pins are on the bottom. Only four of the ten pins are needed. And just to confuse you in the picture below the sign is "upside down" relative to the camera.
 * Pins 2 and 9 are tied to ground
-* Pin 3 to Arduino RX
-* Pin 6 to Arduino TX
+* Pin 3 to Arduino RX - BE CAREFULL OF VOLTAGE LEVELS IF YOU HAVE A 3v3 DEVICE!!
+* Pin 6 to Arduino TX - BE CAREFULL OF VOLTAGE LEVELS IF YOU HAVE A 3v3 DEVICE!!
 
-Also it is important that these connections are made when the sign is off because it detects them at boot and will not change dynamically afterwards.
+Also it is important that these connections are made when the sign is off because it detects them at boot and will not detect them dynamically afterwards.
 
 ![Breadboarding the ESP8266 and 4049](http://i.imgur.com/fm9he2R.jpg)
 
@@ -53,7 +53,7 @@ Here is an example:  a message that says "I love **pie**."
 I love _BOLDpie_NORM.
 ```
 
-The commands are documented in the manual and their names for my protocol are in the code. Each one is limited to just for characters.
+The commands are documented in the manual and their names for my protocol are in the code. Each one is limited to just four characters.
 
 ```Arduino
 #define CCMSG_STOP          "STOP"
@@ -108,6 +108,14 @@ To use the protocol just call the "processColorCellsProtocol" function in your p
     ...
     cc.processColorCellsProtocol("_STOP_PROG1_CLERthis is the new message for bank 1_SEQ1_RUN")
     ...
+```
+
+The api above is fairly low-level example. I also added high-level commands that all assume that the sign is in the *running* state (except for the run() command.)
+```Arduino
+    cc.run(); // Starts the message sequence back up
+    cc.stop(); // Stops the message sequence
+    cc.setSequence("0120"); // Sequences message banks 0,1,2, then 0 again.
+    cc.programBank('9', "I like _BOLDpie_NORM.") // Erases the message currently in bank 9, and replaces it with this sample
 ```
 
 # ESP8266WebServer Example
